@@ -69,8 +69,6 @@ Fo each created code, we need to make a note of the following in the API respons
 We also need to make sure to match each QR Code "id" field (ID_A) from ACCOUNT_A to the associated newly created QR Codes in ACCOUNT_B (ID_B).
 This will ensure that the codes we create in ACCOUNT_B exactly match the codes that were in ACCOUNT_A.
 
-(Not sure how to do this - but it should be possible).
-
 ___________________________________________________________________________________
 
 6) - Delete the QR Codes in the REBUILDS folder in ACCOUNT_A.

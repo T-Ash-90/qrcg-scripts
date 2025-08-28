@@ -16,13 +16,9 @@ def get_folder_id(api_key_a):
     # Pass the API key as a command-line argument
     result = subprocess.run(["python", "get_folder_id.py", api_key_a], capture_output=True, text=True)
 
-    print("Subprocess Output:")
-    print(result.stdout)  # Print the output of the script for debugging
+    print(result.stdout)
 
     folder_id = result.stdout.split(":")[1].strip()
-
-    # Debugging: print the folder_id to ensure it's correct
-    print(f"Captured Folder ID: {folder_id}")
 
     return folder_id
 
