@@ -4,6 +4,7 @@ import csv
 import requests
 import json
 import time
+import sys
 
 def create_qr_code_in_account_b(api_key_b, title, target_url, type_id=1):
     """
@@ -99,11 +100,15 @@ def create_qr_codes_in_account_b_from_csv(csv_file_path, api_key_b):
 
 # Main execution logic
 if __name__ == "__main__":
-    # Ask for the API key for ACCOUNT_B (since it is separate)
-    API_KEY_B = input("Please enter API_KEY_B: ")
-
-    # Path to the CSV file containing the QR code data from ACCOUNT_A
-    csv_file_path = "csv-exports/qr_codes.csv"
+    # Check if the script is being called from the main script or directly
+    if len(sys.argv) > 2:
+        # If run from subprocess.run, get the arguments passed (API_KEY_B, CSV file path)
+        API_KEY_B = sys.argv[1]
+        csv_file_path = sys.argv[2]
+    else:
+        # If run directly, ask for user input
+        API_KEY_B = input("Please enter API_KEY_B: ")
+        csv_file_path = input("Please enter the path to the CSV file (default: csv-exports/qr_codes.csv): ") or "csv-exports/qr_codes.csv"
 
     # Create QR codes in ACCOUNT_B based on the CSV data
     create_qr_codes_in_account_b_from_csv(csv_file_path, API_KEY_B)

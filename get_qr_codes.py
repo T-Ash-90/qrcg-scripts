@@ -4,6 +4,7 @@ import requests
 import csv
 import json
 import os
+import sys
 
 def get_qr_codes(api_key, folder_id):
     """
@@ -113,11 +114,14 @@ def save_to_csv(data, folder="csv-exports", filename="qr_codes.csv"):
 
 # Check if the script is being run directly or imported
 if __name__ == "__main__":
-    # Ask for the API key if running standalone
-    API_KEY_A = input("Please enter API_KEY_A: ")
-
-    # You can also pass the folder_id directly, or import it from another script
-    FOLDER_ID = input("Please enter the REBUILDS FOLDER_ID: ")  # In practice, this would be imported or passed in
+    # Check if API_KEY_A and FOLDER_ID are provided as arguments
+    if len(sys.argv) > 2:
+        API_KEY_A = sys.argv[1]
+        FOLDER_ID = sys.argv[2]
+    else:
+        # If not, ask for the API key and folder ID interactively
+        API_KEY_A = input("Please enter API_KEY_A: ")
+        FOLDER_ID = input("Please enter the REBUILDS FOLDER_ID: ")
 
     # Fetch the QR Codes data
     qr_codes = get_qr_codes(API_KEY_A, FOLDER_ID)

@@ -3,6 +3,7 @@
 import csv
 import requests
 import time
+import sys
 
 def load_mapping_from_csv(file_path="csv-exports/qr_code_mapping.csv"):
     """
@@ -70,10 +71,14 @@ def delete_qr_codes_from_account_a(api_key_a, mapping_file="csv-exports/qr_code_
 
     print("Deletion process completed.")
 
-# Main execution logic
+# Check if the script is being run directly or imported
 if __name__ == "__main__":
-    # Ask for the API key for ACCOUNT_A (since it is separate)
-    API_KEY_A = input("Please enter API_KEY_A: ")
+    # If running directly, ask for user input
+    if len(sys.argv) < 2:
+        API_KEY_A = input("Please enter API_KEY_A: ")
+    else:
+        # If called via subprocess, get the API key from command-line arguments
+        API_KEY_A = sys.argv[1]
 
     # Start the deletion process
     delete_qr_codes_from_account_a(API_KEY_A)

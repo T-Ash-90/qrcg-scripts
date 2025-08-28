@@ -15,7 +15,15 @@ def get_folder_id(api_key_a):
     print("Fetching Folder ID...")
     # Pass the API key as a command-line argument
     result = subprocess.run(["python", "get_folder_id.py", api_key_a], capture_output=True, text=True)
-    folder_id = result.stdout.strip()  # Assuming the script prints the folder ID
+
+    print("Subprocess Output:")
+    print(result.stdout)  # Print the output of the script for debugging
+
+    folder_id = result.stdout.split(":")[1].strip()
+
+    # Debugging: print the folder_id to ensure it's correct
+    print(f"Captured Folder ID: {folder_id}")
+
     return folder_id
 
 def get_qr_codes(api_key_a, folder_id):
@@ -23,8 +31,12 @@ def get_qr_codes(api_key_a, folder_id):
     Run the get_qr_codes.py script to get the QR Codes data.
     """
     print("Fetching QR Codes data from ACCOUNT_A...")
-    result = subprocess.run(["python", "get_qr_codes.py", api_key_a, folder_id], capture_output=True, text=True)
-    # The script should save the CSV file, so we assume it's in a predefined location
+    result = subprocess.run(
+        ["python", "get_qr_codes.py", api_key_a, folder_id], capture_output=True, text=True
+    )
+    if result.returncode != 0:
+        print(f"Error: Failed to fetch QR Codes. {result.stderr}")
+        return None
     return "csv-exports/qr_codes.csv"
 
 def create_qr_codes(api_key_b, csv_file_path):
@@ -33,6 +45,9 @@ def create_qr_codes(api_key_b, csv_file_path):
     """
     print("Creating QR Codes in ACCOUNT_B...")
     result = subprocess.run(["python", "create_qr_codes.py", api_key_b, csv_file_path], capture_output=True, text=True)
+    if result.returncode != 0:
+        print(f"Error: Failed to create QR Codes in ACCOUNT_B. {result.stderr}")
+        return None
     return "csv-exports/qr_code_mapping.csv"
 
 def delete_qr_codes(api_key_a):
@@ -41,7 +56,10 @@ def delete_qr_codes(api_key_a):
     """
     print("Deleting QR Codes from ACCOUNT_A...")
     result = subprocess.run(["python", "delete_qr_codes.py", api_key_a], capture_output=True, text=True)
-    return result
+    if result.returncode != 0:
+        print(f"Error: Failed to delete QR Codes in ACCOUNT_A. {result.stderr}")
+        return False
+    return True
 
 def update_short_urls(api_key_b):
     """
@@ -49,7 +67,10 @@ def update_short_urls(api_key_b):
     """
     print("Updating short URLs in ACCOUNT_B...")
     result = subprocess.run(["python", "update_short_urls.py", api_key_b], capture_output=True, text=True)
-    return result
+    if result.returncode != 0:
+        print(f"Error: Failed to update short URLs in ACCOUNT_B. {result.stderr}")
+        return False
+    return True
 
 def main():
     # Step 1: Get API Keys
@@ -57,18 +78,31 @@ def main():
 
     # Step 2: Get FOLDER_ID from get_folder_id.py
     folder_id = get_folder_id(API_KEY_A)
+    if not folder_id:
+        print("Error: Unable to fetch Folder ID, exiting process.")
+        return
 
     # Step 3: Get QR Codes from ACCOUNT_A and save to CSV (get_qr_codes.py)
     qr_codes_csv = get_qr_codes(API_KEY_A, folder_id)
+    if not qr_codes_csv:
+        print("Error: Unable to fetch QR Codes, exiting process.")
+        return
 
     # Step 4: Create QR Codes in ACCOUNT_B (create_qr_codes.py)
     qr_code_mapping_csv = create_qr_codes(API_KEY_B, qr_codes_csv)
+    if not qr_code_mapping_csv:
+        print("Error: Unable to create QR Codes in ACCOUNT_B, exiting process.")
+        return
 
     # Step 5: Delete QR Codes in ACCOUNT_A (delete_qr_codes.py)
-    delete_qr_codes(API_KEY_A)
+    if not delete_qr_codes(API_KEY_A):
+        print("Error: Unable to delete QR Codes in ACCOUNT_A, exiting process.")
+        return
 
     # Step 6: Update short URLs in ACCOUNT_B (update_short_urls.py)
-    update_short_urls(API_KEY_B)
+    if not update_short_urls(API_KEY_B):
+        print("Error: Unable to update short URLs in ACCOUNT_B, exiting process.")
+        return
 
     print("Rebuild process completed successfully!")
 
