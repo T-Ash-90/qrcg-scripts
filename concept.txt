@@ -15,25 +15,21 @@ Requirements:
 - Get API Keys for ACCOUNT_A (current location) and ACCOUNT_B (target location).
 
 Steps:
+
 ___________________________________________________________________________________
 
-1) - Run python script.
+1) - Input API Key for ACCOUNT_A (Becomes API_KEY_A value).
+   - Input API Key for ACCOUNT_B (becomes API_KEY_B value).
 ___________________________________________________________________________________
 
-2) - Input API Key for ACCOUNT_A (Becomes API_KEY_A value).
-___________________________________________________________________________________
-
-3) - Input API Key for ACCOUNT_B (becomes API_KEY_B value).
-___________________________________________________________________________________
-
-4) - Attain FOLDER_ID. Make an API call to:
+2) - Attain FOLDER_ID. Make an API call to:
 
 curl -X GET "http://api.qr-code-generator.com/v1/account?access-token={API_KEY_A}&expand=folders,statistics"
 
 From the API call response, under "folders" we need to locate the "id" value that matches the "title": "REBUILDS". Make a note of the "id" value as FOLDER_ID.
 ___________________________________________________________________________________
 
-5) - Attain QR Code data from the REBUILDS folder. Make an API call to:
+3) - Attain QR Code data from the REBUILDS folder. Make an API call to:
 
 curl -X GET "http://api.qr-code-generator.com/v1/codes?access-token={API_KEY_A}&per-page=100&page=1&folder_id={FOLDER_ID}"
 
@@ -54,11 +50,13 @@ If SHORT_URL URL begins with http://l.ead.me/, then DOMAIN_ID = 2
 If SHORT_URL URL begins with https://l.ead.me/, then DOMAIN_ID = 3
 If SHORT_URL URL begins with https://qrco.de/, then DOMAIN_ID = 4
 
-We also need to export this information as a CSV file, for reference in case something goes wrong.
+___________________________________________________________________________________
+
+4) We need to export the QR Code information as a CSV file, for reference in case something goes wrong.
 
 ___________________________________________________________________________________
 
-6) - Create QR Codes in ACCOUNT_B using the collected data. Make API calls to:
+5) - Create QR Codes in ACCOUNT_B using the collected data. Make API calls to:
 
 curl -X POST "https://api.qr-code-generator.com/v1/codes?access-token={API_KEY_B}" \
   -H "Content-Type: application/json" \
@@ -75,7 +73,7 @@ This will ensure that the codes we create in ACCOUNT_B exactly match the codes t
 
 ___________________________________________________________________________________
 
-8) - Delete the QR Codes in the REBUILDS folder in ACCOUNT_A.
+6) - Delete the QR Codes in the REBUILDS folder in ACCOUNT_A.
 
 For each QR Code, we will need to make the following API call:
 
@@ -83,7 +81,7 @@ curl -X DELETE "https://api.qr-code-generator.com/v1/codes/{ID_A}?access-token={
 
 ___________________________________________________________________________________
 
-9) - Update the "short_url" field for each newly created QR Code in ACCOUNT_B to match what it was in ACCOUNT_A.
+7) - Update the "short_url" field for each newly created QR Code in ACCOUNT_B to match what it was in ACCOUNT_A.
 For Each QR Code ID Make API calls to:
 
 curl -X PUT "https://api.qr-code-generator.com/v1/codes/{ID_B}?access-token={API_KEY_B}" \
@@ -92,8 +90,8 @@ curl -X PUT "https://api.qr-code-generator.com/v1/codes/{ID_B}?access-token={API
 
 ___________________________________________________________________________________
 
-10) - Print the output:
+8) - Print the output:
 
 "The Following QR Codes have been rebuilt:"
 
-Then list each SHORT URL.
+Then list each SHORT URL that was rebuilt.
