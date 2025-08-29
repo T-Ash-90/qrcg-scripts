@@ -1,10 +1,11 @@
-# Script to get the list of QR Codes to be rebuilt and export as CSV
-
 import requests
 import csv
 import json
 import os
 import sys
+from rich.console import Console
+
+console = Console()
 
 def get_qr_codes(api_key, folder_id):
     """
@@ -41,6 +42,11 @@ def get_qr_codes(api_key, folder_id):
         else:
             print(f"Error: Unable to fetch data. Status code {response.status_code}")
             break
+
+    # If no QR codes were found, print the error and return
+    if not qr_codes:
+        console.print("[bold red]Error: No QR Codes Found[/bold red]")
+        sys.exit(1)
 
     return qr_codes
 
