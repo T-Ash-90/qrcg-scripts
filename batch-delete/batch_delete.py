@@ -72,13 +72,23 @@ def delete_qr_codes(api_key, qr_codes):
     return deleted_codes_info
 
 def write_csv_report(deleted_codes):
-    filename = "deleted_qr_codes.csv"
-    with open(filename, mode='w', newline='', encoding='utf-8') as file:
+    # Specify the directory and filename
+    directory = 'csv-exports'
+    filename = 'deleted_qr_codes.csv'
+    file_path = os.path.join(directory, filename)
+
+    # Create the directory if it doesn't exist
+    os.makedirs(directory, exist_ok=True)  # This creates the directory if it doesn't exist
+
+    # Open the file for writing
+    with open(file_path, mode='w', newline='', encoding='utf-8') as file:
         writer = csv.DictWriter(file, fieldnames=[
             'id', 'type_id', 'type_name', 'title',
             'short_code', 'short_url', 'target_url'
         ])
         writer.writeheader()
+
+        # Write the data rows
         for code in deleted_codes:
             writer.writerow({
                 'id': code.get('id'),
@@ -89,7 +99,8 @@ def write_csv_report(deleted_codes):
                 'short_url': code.get('short_url'),
                 'target_url': code.get('target_url')
             })
-    print(f"\nCSV report saved as '{filename}'.")
+
+    print(f"\nCSV report saved as '{file_path}'.")
 
 def main():
     print("QR Code Batch Deletion Tool\n------------------------")
