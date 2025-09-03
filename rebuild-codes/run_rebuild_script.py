@@ -9,7 +9,7 @@ console = Console()
 def get_api_keys():
     # Loop until a valid (non-empty) API key is entered for ACCOUNT_A
     while True:
-        API_KEY_A = console.input("[bold green]🔑  Enter API Key for ACCOUNT A (🗂️ source location):[/bold green] ")
+        API_KEY_A = console.input("[bold green]🔑  Enter API Key for ACCOUNT A (📍 source location):[/bold green] ")
         if API_KEY_A.strip():  # Check if the input is not just whitespace
             break
         console.print("[bold red]Error: API Key for ACCOUNT A cannot be blank![/bold red]")
