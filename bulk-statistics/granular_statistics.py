@@ -1,5 +1,3 @@
-# granular_statistics.py
-
 import csv
 import requests
 import time

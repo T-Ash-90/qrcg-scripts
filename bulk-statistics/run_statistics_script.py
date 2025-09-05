@@ -1,5 +1,3 @@
-# qrcg_statistics.py
-
 import os
 import requests
 import csv

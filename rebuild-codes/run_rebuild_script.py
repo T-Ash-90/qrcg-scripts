@@ -1,5 +1,3 @@
-# Main script for Dynamic Website QR Code rebuilds
-
 import subprocess
 import sys
 from rich.console import Console

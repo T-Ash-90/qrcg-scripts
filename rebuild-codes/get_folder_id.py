@@ -1,5 +1,3 @@
-# Script to get the FOLDER_ID from ACCOUNT_A
-
 import requests
 import sys
 

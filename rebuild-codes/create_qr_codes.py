@@ -1,5 +1,3 @@
-# Script to create QR Codes in ACCOUNT_B
-
 import csv
 import requests
 import json

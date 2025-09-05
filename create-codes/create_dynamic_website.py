@@ -1,5 +1,3 @@
-# Create a Dynamic Website QR Code
-
 import requests
 import json
 import re

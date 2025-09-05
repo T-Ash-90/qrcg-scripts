@@ -1,5 +1,3 @@
-#A standalone script that allows batch QR Code deletion.
-
 import requests
 import csv
 import os
@@ -106,15 +104,15 @@ def main():
     print("QR Code Batch Deletion Tool\n------------------------")
     api_key = get_api_key()
 
-    # Step 2: Get folders
+    # Step 1: Get folders
     account_data = get_account_info(api_key)
     folders = account_data.get("folders", [])
 
-    # Step 3: Let user pick a folder or all
+    # Step 2: Let user pick a folder or all
     folder_id, folder_name = choose_folder(folders)
     print(f"\nSelected Folder: {folder_name} (ID: {folder_id})")
 
-    # Step 4: Get QR codes
+    # Step 3: Get QR codes
     qr_codes = get_qr_codes(api_key, folder_id)
     if not qr_codes:
         print("No QR codes found.")
@@ -126,10 +124,10 @@ def main():
         print("Operation cancelled. No QR codes were deleted.")
         return
 
-    # Step 5: Delete each QR code
+    # Step 4: Delete each QR code
     deleted_codes = delete_qr_codes(api_key, qr_codes)
 
-    # Step 6: Ask to save report
+    # Step 5: Ask to save report
     if deleted_codes:
         choice = input("\nWould you like to save a CSV report of deleted QR codes? (y/n): ").lower()
         if choice == 'y':

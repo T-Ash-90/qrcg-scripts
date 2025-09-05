@@ -1,5 +1,3 @@
-# Script that updates the short URLs for rebuilt QR Codes
-
 import sys
 import csv
 import requests

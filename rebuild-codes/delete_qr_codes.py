@@ -1,5 +1,3 @@
-# A script to delete QR Codes from ACCOUNT_A by referencing the qr_code_mappting.csv file
-
 import csv
 import requests
 import time
