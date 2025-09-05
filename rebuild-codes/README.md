@@ -23,7 +23,7 @@ This script allows you to rebuild QR codes across two different accounts, Accoun
 ## Setup
 
 1. Clone the repository
-2. Run main_script.py
+2. Run the main script: `run_rebuild_script.py`
 3. Follow the prompts to enter your API keys for Account A and Account B. The script will:
     - Fetch the folder ID from Account A.
     - Retrieve the QR code data from the specified folder.
