@@ -51,8 +51,8 @@ def save_to_csv(parsed_data, qr_code_id, title, output_folder):
         if not os.path.exists(output_folder):
             os.makedirs(output_folder)
 
-        # Clean up the title to ensure it's a valid filename
-        sanitized_title = title.replace(" ", "_").replace(",", "").replace("/", "_") if title else "No_Title"
+        # Clean up the title to ensure it's a valid filename and no longer than 20 characters
+        sanitized_title = (title.replace(" ", "_").replace(",", "").replace("/", "_")[:20]) if title else "No_Title"
 
         # Define the filename based on QR Code ID and Title
         output_filename = os.path.join(output_folder, f"{qr_code_id}_{sanitized_title}.csv")
