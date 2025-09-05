@@ -7,7 +7,10 @@ This script allows you to rebuild QR codes across two different accounts, Accoun
 - Python 3.x
 - `requests`
 - `rich`
+  
 - API keys for both QR Code Generator accounts
+- The QR Codes that are to be rebuilt must be Dynamic Website QR Codes
+- The QR Codes that are to be rebuilt must be in Account A in a folder named REBUILDS
 
 ## Setup
 
