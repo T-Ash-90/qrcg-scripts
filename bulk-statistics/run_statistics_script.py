@@ -125,7 +125,7 @@ def fetch_qr_codes(access_token, start_date, end_date):
             )
 
             # Display scan data for dynamic QR codes
-            if not bool(short_url):  # Only show scans for dynamic QR codes
+            if bool(short_url):  # Only show scans for dynamic QR codes
                 output += (
                     "\n"
                     f"[bold]Total Scans:[/bold] {total_scans}\n"
