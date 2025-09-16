@@ -44,7 +44,7 @@ if response.status_code == 200:
     # Parse the JSON response
     response_data = response.json()
     created_id = response_data.get('id')
-    image_url = response_data.get('image_url')  # Not used, but available
+    image_url = response_data.get('image_url')
 
     if not created_id:
         print("⚠️ Could not retrieve ID from QR code creation response.")
