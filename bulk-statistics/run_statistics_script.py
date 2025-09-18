@@ -8,9 +8,8 @@ from rich.panel import Panel
 from rich.table import Table
 from datetime import datetime
 from collections import defaultdict
-from granular_statistics import process_qr_codes  # Import the granular script function
+from granular_statistics import process_qr_codes 
 
-# Initialize the rich console for pretty output in terminal
 console = Console()
 
 # Helper function to remove rich formatting from text for CSV output
@@ -34,7 +33,7 @@ def fetch_qr_codes(access_token, start_date, end_date):
     total_scans_all_time = 0  # Total scans for dynamic QR codes
     qr_code_data = []  # List to store the QR code data to be written to CSV
 
-    max_pages = 10000  # Maximum number of pages to fetch
+    max_pages = 10000  # This is kind of arbitrary, but prevents infinite loops in case of API issues
 
     # Fetch QR codes in batches (pagination) and handle API response
     with console.status("[bold green]Fetching QR codes...") as status:
