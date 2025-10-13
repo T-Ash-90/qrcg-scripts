@@ -78,6 +78,12 @@ def fetch_qr_codes(access_token, start_date, end_date):
             type_name = qr.get("type_name", "Unknown")
             total_scans = qr.get("total_scans", 0)
             unique_scans = qr.get("unique_scans", 0)
+            status_raw = qr.get("status", "unknown")
+            status = (status_raw or "unknown").lower()
+
+            # For terminal colors
+            status_color = "green" if status == "active" else ("red" if status == "paused" else "yellow")
+            status_display = f"[{status_color}]{status.capitalize()}[/{status_color}]"
 
             # Check if the QR code is dynamic (based on the presence of a short URL)
             is_dynamic = bool(short_url)
@@ -120,7 +126,8 @@ def fetch_qr_codes(access_token, start_date, end_date):
                 f"[bold]Created:[/bold]{created}\n"
                 f"[bold]Short URL:[/bold] [cyan]{short_url_display}[/cyan]\n"
                 f"[bold]Target URL:[/bold] [cyan]{target_url_display}[/cyan]\n"
-                f"[bold]Type:[/bold] {qr_type_display}"
+                f"[bold]Type:[/bold] {qr_type_display}\n"
+                f"[bold]Status:[/bold] {status_display}"
             )
 
             # Display scan data for dynamic QR codes
@@ -144,6 +151,7 @@ def fetch_qr_codes(access_token, start_date, end_date):
                 "Target URL": remove_rich_formatting(target_url),
                 "Solution Type": remove_rich_formatting(type_name),
                 "QR Code Type": qr_code_type,
+                "Status": status,
                 "Total Scans": remove_rich_formatting(str(total_scans)) if is_dynamic else "",
                 "Unique Scans": remove_rich_formatting(str(unique_scans)) if is_dynamic else "",
             }
@@ -201,8 +209,9 @@ def fetch_qr_codes(access_token, start_date, end_date):
         # Define CSV columns for detailed QR code data
         fieldnames = [
             "ID", "Created", "Title", "Short URL", "Target URL",
-            "Solution Type", "QR Code Type", "Total Scans", "Unique Scans"
+            "Solution Type", "QR Code Type", "Status", "Total Scans", "Unique Scans"
         ]
+
 
         # Write QR code data to the detailed CSV file
         with open(filename, mode='w', newline='') as file:
