@@ -23,7 +23,7 @@ def main():
                     print(f"🔐 Token:            {token_info.get('token', 'N/A')}")
                     print(f"📅 Created At:       {token_info.get('created_at', 'N/A')}")
                     print(f"✅ Enabled:          {token_info.get('enabled', 'N/A')}")
-                    print(f"🚀 Rate Limit:       {token_info.get('rate_limit', 'N/A')}")
+                    print(f"🚀 Rate Limit (/s):  {token_info.get('rate_limit', 'N/A')}")
                     print(f"📈 Monthly Limit:    {token_info.get('rate_limit_month', 'N/A')}")
                     print(f"📊 Remaining:        {token_info.get('rate_number_month', 'N/A')}")
                 print(f"\n🎯 Total tokens: {len(tokens)}")
