@@ -10,18 +10,15 @@ THROTTLE_DELAY = 0.11
 
 
 def get_api_key():
-    """Prompt user for their API key."""
     return input("Enter your API key: ").strip()
 
 
 def get_csv_path():
-    """Prompt user for path to CSV file."""
     path = input("Enter path to CSV file with an 'ID' column: ").strip()
     return Path(path).expanduser()
 
 
 def read_ids_from_csv(csv_path):
-    """Read unique, non-empty IDs from the given CSV (case-insensitive 'ID' column)."""
     if not csv_path.exists():
         print(f"❌ File not found: {csv_path}")
         return []
@@ -51,7 +48,6 @@ def read_ids_from_csv(csv_path):
 
 
 def delete_code(api_key, code_id):
-    """Delete a single QR Code by ID."""
     url = f"{API_BASE}/codes/{code_id}?access-token={api_key}"
     resp = requests.delete(url)
     if resp.status_code == 204:
@@ -62,7 +58,6 @@ def delete_code(api_key, code_id):
 
 
 def write_report(deleted_ids):
-    """Save a simple CSV report of deleted IDs."""
     out_dir = Path("csv-exports")
     out_dir.mkdir(exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")

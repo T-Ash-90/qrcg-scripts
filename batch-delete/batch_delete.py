@@ -118,16 +118,17 @@ def main():
         print("No QR codes found.")
         return
 
+    #Step 4: Confirm deletion
     print(f"\nYou are about to permanently delete {len(qr_codes)} QR Code(s).")
     confirm = input("Would you like to proceed? (y/n): ").strip().lower()
     if confirm != 'y':
         print("Operation cancelled. No QR codes were deleted.")
         return
 
-    # Step 4: Delete each QR code
+    # Step 5: Delete each QR code
     deleted_codes = delete_qr_codes(api_key, qr_codes)
 
-    # Step 5: Ask to save report
+    # Step 6: Ask to save report
     if deleted_codes:
         choice = input("\nWould you like to save a CSV report of deleted QR codes? (y/n): ").lower()
         if choice == 'y':
