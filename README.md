@@ -26,8 +26,7 @@ pip install -r requirements.txt
 - Provides global and individual statistics for QR Codes within an account.
 
 ## Usage:
-Run scripts directly in your terminal by navigating to the respective folders and initializing run.py
-Examples:
+Run scripts directly in your terminal by navigating to the respective folders and initializing run.py:
 
 ```bash
 python3 api/run.py
