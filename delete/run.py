@@ -49,7 +49,7 @@ def get_qr_codes(api_key, folder_id):
         if len(codes) < 100:
             break
         page += 1
-        time.sleep(0.11)  # <- Throttle to stay under 10 requests/sec
+        time.sleep(0.11)  # Throttle to stay under 10 requests/sec
 
     return all_codes
 
@@ -65,20 +65,17 @@ def delete_qr_codes(api_key, qr_codes):
             deleted_codes_info.append(code)
         else:
             print(f"Failed to delete QR Code ID {code_id}: {response.status_code} - {response.text}")
-        time.sleep(0.11)  # <- Throttle each DELETE to avoid rate limits
+        time.sleep(0.11)  # Throttle to avoid rate limits
 
     return deleted_codes_info
 
 def write_csv_report(deleted_codes):
-    # Specify the directory and filename
     directory = 'csv-exports'
     filename = 'deleted_qr_codes.csv'
     file_path = os.path.join(directory, filename)
 
-    # Create the directory if it doesn't exist
-    os.makedirs(directory, exist_ok=True)  # This creates the directory if it doesn't exist
+    os.makedirs(directory, exist_ok=True)
 
-    # Open the file for writing
     with open(file_path, mode='w', newline='', encoding='utf-8') as file:
         writer = csv.DictWriter(file, fieldnames=[
             'id', 'type_id', 'type_name', 'title',
@@ -86,7 +83,6 @@ def write_csv_report(deleted_codes):
         ])
         writer.writeheader()
 
-        # Write the data rows
         for code in deleted_codes:
             writer.writerow({
                 'id': code.get('id'),
