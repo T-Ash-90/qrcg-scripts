@@ -4,7 +4,6 @@ import requests
 import json
 import time
 
-# Function to load the QR Code mapping data (ID_A and ID_B)
 def load_mapping_from_csv(file_path="csv-exports/qr_code_mapping.csv"):
     mappings = []
     with open(file_path, mode='r', encoding='utf-8') as csvfile:
@@ -12,7 +11,6 @@ def load_mapping_from_csv(file_path="csv-exports/qr_code_mapping.csv"):
         mappings = [row for row in reader]
     return mappings
 
-# Function to load QR codes from csv to get domain_id and short_code based on ID_A
 def load_qr_codes_from_csv(file_path="csv-exports/qr_codes.csv"):
     qr_codes = {}
     with open(file_path, mode='r', encoding='utf-8') as csvfile:
@@ -25,7 +23,6 @@ def load_qr_codes_from_csv(file_path="csv-exports/qr_codes.csv"):
             }
     return qr_codes
 
-# Function to update the short URL in ACCOUNT_B
 def update_short_url_in_account_b(api_key_b, id_b, short_code, domain_id):
     url = f"https://api.qr-code-generator.com/v1/codes/{id_b}?access-token={api_key_b}"
     headers = {"Content-Type": "application/json"}
@@ -39,7 +36,6 @@ def update_short_url_in_account_b(api_key_b, id_b, short_code, domain_id):
     else:
         print(f"Failed to update short URL for ID_B: {id_b}. Status code: {response.status_code}")
 
-# Function to update short URLs for QR codes in ACCOUNT_B
 def update_qr_codes_short_urls(api_key_b, mapping_file="csv-exports/qr_code_mapping.csv", qr_codes_file="csv-exports/qr_codes.csv"):
     mappings = load_mapping_from_csv(mapping_file)
     qr_codes_data = load_qr_codes_from_csv(qr_codes_file)
@@ -61,11 +57,10 @@ def update_qr_codes_short_urls(api_key_b, mapping_file="csv-exports/qr_code_mapp
         else:
             print(f"No data found for ID_A: {id_a} in qr_codes.csv. Skipping update for ID_B: {id_b}")
 
-# Handle API key passed via command line argument
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Error: API_KEY_B is required.")
-        sys.exit(1)  # Exit if API_KEY_B is not provided
+        sys.exit(1)
 
-    API_KEY_B = sys.argv[1]  # Get API_KEY_B passed by the main script
+    API_KEY_B = sys.argv[1]
     update_qr_codes_short_urls(API_KEY_B)
