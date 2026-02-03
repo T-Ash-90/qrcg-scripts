@@ -3,10 +3,10 @@
 This repository contains a collection of Python scripts designed for automating tasks in the QR Code Generator platform.
 
 ## Features:
-- API usage monitoring — Track your account’s API consumption.
-- Bulk deletion — Remove large batches of QR Codes from folders or entire accounts.
-- Bulk rebuild — Rebuild Dynamic Website QR Codes from one account to another.
-- Statistics extraction — Retrieve global and per‑QR‑Code analytics.
+- API usage monitoring: Track your account’s API consumption.
+- Bulk deletion: Remove large batches of QR Codes from folders or entire accounts.
+- Bulk rebuild: Rebuild Dynamic Website QR Codes from one account to another.
+- Statistics extraction: Retrieve global and per‑QR‑Code analytics.
 
 ## Requirements:
 Install dependencies using:
@@ -27,5 +27,5 @@ pip install -r requirements.txt
 
 ## Usage:
 Run scripts directly in your terminal by navigating to the respective folders and initializing run.py.
-
-Follow instructions to complete the desired actions.
+Make sure to navigate to and run the script from within the respective folder.
+Once initialized, follow instructions and prompts to complete the desired actions.
