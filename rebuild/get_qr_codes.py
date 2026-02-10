@@ -67,7 +67,7 @@ def get_domain_id(short_url):
         return 3
     elif short_url.startswith("https://qrco.de/"):
         return 4
-    return None
+    return 4
 
 def save_to_csv(data, folder="csv-exports", filename="qr_codes.csv"):
     if not os.path.exists(folder):
