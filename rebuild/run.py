@@ -35,7 +35,7 @@ def get_folder_id(api_key_a):
     return folder_id
 
 def get_qr_codes(api_key_a, folder_id):
-    console.print("[bold cyan]📱 Fetching QR Codes data from ACCOUNT_A...[/bold cyan]")
+    console.print("[bold cyan]📱 Fetching QR Code data from ACCOUNT_A...[/bold cyan]")
 
     result = subprocess.run(
         ["python", "get_qr_codes.py", api_key_a, folder_id], capture_output=True, text=True
@@ -50,6 +50,20 @@ def get_qr_codes(api_key_a, folder_id):
         return None
 
     return "csv-exports/qr_codes.csv"
+
+def get_designs(api_key_a):
+    console.print("[bold cyan]🎨 Fetching QR Code designs from ACCOUNT_A...[/bold cyan]")
+    result = subprocess.run(
+        ["python", "get_designs.py", api_key_a],
+        capture_output=True,
+        text=True
+    )
+
+    if result.returncode != 0:
+        console.print(f"[bold red]Error: Failed to fetch designs.[/bold red] {result.stderr}")
+        return False
+
+    return True
 
 def create_qr_codes(api_key_b, csv_file_path):
     console.print("[bold cyan]🔨 Creating QR Codes in ACCOUNT_B...[/bold cyan]")
@@ -81,6 +95,20 @@ def update_short_urls(api_key_b):
 
     return True
 
+def update_designs(api_key_b):
+    console.print("[bold cyan]🎯 Applying designs to QR Codes in ACCOUNT_B...[/bold cyan]")
+    result = subprocess.run(
+        ["python", "update_designs.py", api_key_b],
+        capture_output=True,
+        text=True
+    )
+
+    if result.returncode != 0:
+        console.print(f"[bold red]Error: Failed to update designs.[/bold red] {result.stderr}")
+        return False
+
+    return True
+
 def main():
     # Step 1: Get API Keys
     API_KEY_A, API_KEY_B = get_api_keys()
@@ -96,21 +124,31 @@ def main():
     if not qr_codes_csv:
         console.print("[bold red]Error: Unable to fetch QR Codes, exiting process.[/bold red]")
         return
+    
+    # Step 4: Get QR Code Designs from ACCOUNT_A (get_designs.py)
+    if not get_designs(API_KEY_A):
+        console.print("[bold red]Error: Unable to fetch designs, exiting process.[/bold red]")
+        return
 
-    # Step 4: Create QR Codes in ACCOUNT_B (create_qr_codes.py)
+    # Step 5: Create QR Codes in ACCOUNT_B (create_qr_codes.py)
     qr_code_mapping_csv = create_qr_codes(API_KEY_B, qr_codes_csv)
     if not qr_code_mapping_csv:
         console.print("[bold red]Error: Unable to create QR Codes in ACCOUNT_B, exiting process.[/bold red]")
         return
 
-    # Step 5: Delete QR Codes in ACCOUNT_A (delete_qr_codes.py)
+    # Step 6: Delete QR Codes in ACCOUNT_A (delete_qr_codes.py)
     if not delete_qr_codes(API_KEY_A):
         console.print("[bold red]Error: Unable to delete QR Codes in ACCOUNT_A, exiting process.[/bold red]")
         return
 
-    # Step 6: Update short URLs in ACCOUNT_B (update_short_urls.py)
+    # Step 7: Update short URLs in ACCOUNT_B (update_short_urls.py)
     if not update_short_urls(API_KEY_B):
         console.print("[bold red]Error: Unable to update short URLs in ACCOUNT_B, exiting process.[/bold red]")
+        return
+    
+    # Step 8: Update designs in ACCOUNT_B (update_designs.py)
+    if not update_designs(API_KEY_B):
+        console.print("[bold red]Error: Unable to update designs in ACCOUNT_B, exiting process.[/bold red]")
         return
 
     console.print("[bold magenta]✅ Rebuild process completed successfully![/bold magenta]")
