@@ -100,8 +100,8 @@ def get_qr_codes(api_key, folder_id):
 
                 qr_codes.extend(data)
 
-            # Optional: small delay to avoid rate limiting
-            time.sleep(0.05)
+            # Avoid rate limit:
+            time.sleep(0.11)
 
         except Exception as e:
             debug(f"Request failed on page {page}: {e}", "CRITICAL")
