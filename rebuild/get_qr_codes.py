@@ -2,41 +2,124 @@ import requests
 import csv
 import os
 import sys
+import math
+import time
+import traceback
 from rich.console import Console
 
 console = Console()
 
+PER_PAGE = 100
+
+
+# -------------------------
+# DEBUG LOGGER
+# -------------------------
+def debug(msg, level="INFO"):
+    print(f"[{level}] {msg}")
+
+
+# -------------------------
+# FETCH TOTAL COUNT
+# -------------------------
+def get_total_qr_codes(api_key):
+    debug("Fetching total QR code count")
+
+    url = f"https://api.qr-code-generator.com/v1/account?access-token={api_key}"
+
+    try:
+        response = requests.get(url)
+        debug(f"Account endpoint status: {response.status_code}")
+
+        if response.status_code != 200:
+            debug(f"Failed response: {response.text}", "ERROR")
+            return None
+
+        data = response.json()
+        total = data.get("qrcodes", {}).get("activeTotalCodes")
+
+        if total is None:
+            debug("activeTotalCodes not found in response", "ERROR")
+            return None
+
+        debug(f"Total QR codes (account-wide): {total}")
+        return int(total)
+
+    except Exception as e:
+        debug(f"Error fetching total QR codes: {e}", "CRITICAL")
+        traceback.print_exc()
+        return None
+
+
+# -------------------------
+# FETCH QR CODES (REFACTORED)
+# -------------------------
 def get_qr_codes(api_key, folder_id):
     qr_codes = []
-    page = 1
 
-    while True:
-        url = f"http://api.qr-code-generator.com/v1/codes?access-token={api_key}&per-page=100&page={page}&folder_id={folder_id}"
+    total = get_total_qr_codes(api_key)
+    if total is None:
+        console.print("[bold red]Error: Unable to fetch total QR count[/bold red]")
+        sys.exit(1)
 
-        response = requests.get(url)
+    total_pages = math.ceil(total / PER_PAGE)
+    debug(f"Total pages to fetch: {total_pages}")
 
-        if response.status_code == 200:
-            data = response.json()
+    for page in range(1, total_pages + 1):
+        url = (
+            f"http://api.qr-code-generator.com/v1/codes"
+            f"?access-token={api_key}"
+            f"&per-page={PER_PAGE}"
+            f"&page={page}"
+            f"&folder_id={folder_id}"
+        )
+
+        debug(f"Fetching page {page}/{total_pages}")
+
+        try:
+            start_time = time.time()
+            response = requests.get(url)
+            elapsed = time.time() - start_time
+
+            debug(f"Response {page}: {response.status_code} ({elapsed:.2f}s)")
+
+            if response.status_code != 200:
+                debug(f"Failed page {page}: {response.text}", "ERROR")
+                continue
+
+            try:
+                data = response.json()
+            except Exception as json_err:
+                debug(f"JSON parse failed on page {page}: {json_err}", "ERROR")
+                continue
 
             if isinstance(data, list):
                 if not data:
-                    break
+                    debug(f"Empty page {page}", "WARNING")
+                    continue
+
                 qr_codes.extend(data)
 
-            if len(data) < 100:
-                break
+            # Optional: small delay to avoid rate limiting
+            time.sleep(0.05)
 
-            page += 1
-        else:
-            print(f"Error: Unable to fetch data. Status code {response.status_code}")
-            break
+        except Exception as e:
+            debug(f"Request failed on page {page}: {e}", "CRITICAL")
+            traceback.print_exc()
+            continue
 
     if not qr_codes:
         console.print("[bold red]Error: No QR Codes Found[/bold red]")
         sys.exit(1)
 
+    debug(f"Total QR codes fetched (filtered by folder): {len(qr_codes)}")
+
     return qr_codes
 
+
+# -------------------------
+# PROCESS QR CODES
+# -------------------------
 def process_qr_codes(qr_codes):
     processed_data = []
 
@@ -55,8 +138,8 @@ def process_qr_codes(qr_codes):
         processed_data.append(qr_info)
 
     processed_data.reverse()
-
     return processed_data
+
 
 def get_domain_id(short_url):
     if short_url.startswith("http://q-r.to/"):
@@ -69,6 +152,10 @@ def get_domain_id(short_url):
         return 4
     return 4
 
+
+# -------------------------
+# SAVE CSV
+# -------------------------
 def save_to_csv(data, folder="csv-exports", filename="qr_codes.csv"):
     if not os.path.exists(folder):
         os.makedirs(folder)
@@ -87,6 +174,9 @@ def save_to_csv(data, folder="csv-exports", filename="qr_codes.csv"):
     print(f"Data has been saved to {filepath}")
 
 
+# -------------------------
+# MAIN
+# -------------------------
 if __name__ == "__main__":
     if len(sys.argv) > 2:
         API_KEY_A = sys.argv[1]
