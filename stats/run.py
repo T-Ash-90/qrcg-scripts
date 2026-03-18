@@ -2,247 +2,267 @@ import os
 import requests
 import csv
 import re
+import traceback
+import time
 from rich.console import Console
 from rich.prompt import Prompt
-from rich.panel import Panel
-from rich.table import Table
 from datetime import datetime
 from collections import defaultdict
-from granular_statistics import process_qr_codes 
+from granular_statistics import process_qr_codes
 
 console = Console()
 
-def remove_rich_formatting(text):
-    return re.sub(r'\[.*?\]', '', text)
+# -------------------------
+# CONFIG
+# -------------------------
+PER_PAGE = 100
+MAX_SAFE_PAGES = 5000
 
-def fetch_qr_codes(access_token, start_date, end_date):
+
+# -------------------------
+# DEBUG HELPER
+# -------------------------
+def debug(message, level="INFO"):
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    console.print(f"[grey][{timestamp}][{level}] {message}[/grey]")
+
+
+# -------------------------
+# CLEANER
+# -------------------------
+def remove_rich_formatting(text):
+    try:
+        return re.sub(r'\[.*?\]', '', str(text))
+    except Exception:
+        return text
+
+
+# -------------------------
+# FETCH TOTAL COUNT
+# -------------------------
+def get_total_qr_codes(access_token):
+    debug("Fetching total QR code count")
+
+    url = f"https://api.qr-code-generator.com/v1/account?access-token={access_token}"
+
+    try:
+        response = requests.get(url)
+        debug(f"Account endpoint status: {response.status_code}")
+
+        if response.status_code != 200:
+            debug(f"Failed response: {response.text}", "ERROR")
+            return None
+
+        data = response.json()
+        total = data.get("qrcodes", {}).get("activeTotalCodes")
+
+        if total is None:
+            debug("activeTotalCodes not found in response", "ERROR")
+            return None
+
+        debug(f"Total QR codes: {total}")
+        return int(total)
+
+    except Exception as e:
+        debug(f"Error fetching total QR codes: {e}", "CRITICAL")
+        traceback.print_exc()
+        return None
+
+
+# -------------------------
+# FETCH QR CODE PAGES
+# -------------------------
+def fetch_qr_pages(access_token, total_pages):
+    debug(f"Fetching {total_pages} pages")
+
+    base_url = f"https://api.qr-code-generator.com/v1/codes?access-token={access_token}&per-page={PER_PAGE}"
+
+    qr_codes = []
+
+    with console.status("[bold green]Fetching QR codes..."):
+        for page in range(1, total_pages + 1):
+            url = f"{base_url}&page={page}"
+            debug(f"Fetching page {page}/{total_pages}")
+
+            try:
+                start_time = time.time()
+                response = requests.get(url)
+                elapsed = time.time() - start_time
+
+                debug(f"Response {page}: {response.status_code} ({elapsed:.2f}s)")
+
+                if response.status_code != 200:
+                    debug(f"Failed page {page}: {response.text}", "ERROR")
+                    continue
+
+                try:
+                    data = response.json()
+                except Exception as json_err:
+                    debug(f"JSON parse failed on page {page}: {json_err}", "ERROR")
+                    continue
+
+                qr_codes_page = data if isinstance(data, list) else data.get("data", [])
+
+                if not qr_codes_page:
+                    debug(f"Empty page {page} (unexpected)", "WARNING")
+                    continue
+
+                qr_codes.extend(qr_codes_page)
+
+            except Exception as e:
+                debug(f"Request failed on page {page}: {e}", "CRITICAL")
+                traceback.print_exc()
+                continue
+
+    debug(f"Total QR codes fetched: {len(qr_codes)}")
+    return qr_codes
+
+
+# -------------------------
+# PROCESS QR CODES
+# -------------------------
+def process_qr_data(qr_codes):
+    debug("Processing QR codes")
+
     static_qr_count = 0
     dynamic_qr_count = 0
+    total_scans_all_time = 0
 
     static_qr_types = defaultdict(int)
     dynamic_qr_types = defaultdict(lambda: {'count': 0, 'scans': 0})
 
-    base_url = f"https://api.qr-code-generator.com/v1/codes?access-token={access_token}&per-page=100"
-    qr_codes = []
-    page = 1
-    total_scans_all_time = 0
     qr_code_data = []
 
-    max_pages = 10000
-
-    with console.status("[bold green]Fetching QR codes...") as status:
-        for page in range(1, max_pages + 1):
-            url = f"{base_url}&page={page}"
-            try:
-                response = requests.get(url)
-                if response.status_code != 200:
-                    console.print(Panel.fit(
-                        f"[red]Failed to fetch QR codes[/red]\n[bold]Status Code:[/bold] {response.status_code}\n[bold]Response:[/bold] {response.text}"))
-                    return
-
-                data = response.json()
-                qr_codes_page = data if isinstance(data, list) else data.get("data", [])
-
-                if not qr_codes_page:
-                    console.print("[yellow]No QR codes found.[/yellow]")
-                    return
-
-                qr_codes.extend(qr_codes_page)
-
-                if len(qr_codes_page) < 100:
-                    break
-            except Exception as e:
-                console.print(f"[bold red]An error occurred while fetching page {page}:[/bold red] {e}")
-                break
-
-    with console.status("[bold green]Processing QR codes...") as status:
+    with console.status("[bold green]Processing QR codes..."):
         for qr in qr_codes:
-            id = qr.get("id", "N/A")
-            created = qr.get("created", "N/A")
-            title = qr.get("title", None)
-            short_url = qr.get("short_url", "")
-            target_url = qr.get("target_url")
-            type_name = qr.get("type_name", "Unknown")
-            total_scans = qr.get("total_scans", 0)
-            unique_scans = qr.get("unique_scans", 0)
-            status_raw = qr.get("status", "unknown")
-            status = (status_raw or "unknown").lower()
-
-            status_color = "green" if status == "active" else ("red" if status == "paused" else "yellow")
-            status_display = f"[{status_color}]{status.capitalize()}[/{status_color}]"
-
-            is_dynamic = bool(short_url)
-            qr_code_type = "Dynamic" if is_dynamic else "Static"
-            qr_type_display = f"{qr_code_type} - {type_name}"
-
-            if not title:
-                title = target_url if target_url else f"My {type_name}"
-
             try:
-                if 'T' in created:
-                    qr_date = datetime.strptime(created, "%Y-%m-%dT%H:%M:%S.%fZ")
+                id = qr.get("id", "N/A")
+                created = qr.get("created", "N/A")
+                title = qr.get("title")
+                short_url = qr.get("short_url", "")
+                target_url = qr.get("target_url")
+                type_name = qr.get("type_name", "Unknown")
+                total_scans = qr.get("total_scans", 0)
+                unique_scans = qr.get("unique_scans", 0)
+                status = (qr.get("status") or "unknown").lower()
+
+                is_dynamic = bool(short_url)
+
+                # Counters
+                if is_dynamic:
+                    dynamic_qr_count += 1
+                    dynamic_qr_types[type_name]['count'] += 1
+                    dynamic_qr_types[type_name]['scans'] += total_scans
+                    if isinstance(total_scans, int):
+                        total_scans_all_time += total_scans
                 else:
-                    qr_date = datetime.strptime(created, "%Y-%m-%d %H:%M:%S")
-            except ValueError:
-                qr_date = None
+                    static_qr_count += 1
+                    static_qr_types[type_name] += 1
 
-            if qr_date and start_date != "all time" and end_date != "all time":
-                if qr_date < start_date or qr_date > end_date:
-                    continue
+                qr_code_data.append({
+                    "Created": remove_rich_formatting(created),
+                    "ID": remove_rich_formatting(str(id)),
+                    "Title": remove_rich_formatting(title),
+                    "Short URL": remove_rich_formatting(short_url),
+                    "Target URL": remove_rich_formatting(target_url),
+                    "Solution Type": remove_rich_formatting(type_name),
+                    "QR Code Type": "Dynamic" if is_dynamic else "Static",
+                    "Status": status,
+                    "Total Scans": str(total_scans) if is_dynamic else "",
+                    "Unique Scans": str(unique_scans) if is_dynamic else "",
+                })
 
-            if is_dynamic:
-                dynamic_qr_count += 1
-                dynamic_qr_types[type_name]['count'] += 1
-                dynamic_qr_types[type_name]['scans'] += total_scans
-            else:
-                static_qr_count += 1
-                static_qr_types[type_name] += 1
+            except Exception as e:
+                debug(f"Processing error: {e}", "ERROR")
+                traceback.print_exc()
 
-            short_url_display = short_url if short_url else "[red]No Short URL - Static[/red]"
-            target_url_display = target_url if target_url else f"[red]No Target URL - {type_name}[/red]"
+    return {
+        "static_count": static_qr_count,
+        "dynamic_count": dynamic_qr_count,
+        "total_scans": total_scans_all_time,
+        "data": qr_code_data
+    }
 
-            output = (
-                f"[bold]ID:[/bold] {id}\n"
-                f"[bold]Created:[/bold]{created}\n"
-                f"[bold]Short URL:[/bold] [cyan]{short_url_display}[/cyan]\n"
-                f"[bold]Target URL:[/bold] [cyan]{target_url_display}[/cyan]\n"
-                f"[bold]Type:[/bold] {qr_type_display}\n"
-                f"[bold]Status:[/bold] {status_display}"
-            )
 
-            if bool(short_url):
-                output += (
-                    "\n"
-                    f"[bold]Total Scans:[/bold] {total_scans}\n"
-                    f"[bold]Unique Scans:[/bold] {unique_scans}"
-                )
+# -------------------------
+# EXPORT CSV
+# -------------------------
+def export_csv(qr_code_data):
+    if not qr_code_data:
+        debug("No data to export", "WARNING")
+        return None
 
-            console.print()
-            console.print(Panel(output, title=f"[bold]{title}[/bold]", expand=False))
+    folder = "csv-exports"
+    os.makedirs(folder, exist_ok=True)
 
-            row = {
-                "Created": remove_rich_formatting(created),
-                "ID": remove_rich_formatting(str(id)),
-                "Title": remove_rich_formatting(title),
-                "Short URL": remove_rich_formatting(short_url),
-                "Target URL": remove_rich_formatting(target_url),
-                "Solution Type": remove_rich_formatting(type_name),
-                "QR Code Type": qr_code_type,
-                "Status": status,
-                "Total Scans": remove_rich_formatting(str(total_scans)) if is_dynamic else "",
-                "Unique Scans": remove_rich_formatting(str(unique_scans)) if is_dynamic else "",
-            }
+    filename = os.path.join(
+        folder,
+        f"QR_CODE_DATA_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    )
 
-            qr_code_data.append(row)
-
-            if is_dynamic and isinstance(total_scans, int):
-                total_scans_all_time += total_scans
-
-    table = Table(show_header=True, header_style="bold magenta", title="QR Code Summary Statistics")
-
-    table.add_column("QR Code Type", style="cyan", justify="center")
-    table.add_column("QR Code Category", style="bold", justify="left")
-    table.add_column("Count", justify="center")
-    table.add_column("Total Scans", justify="center")
-
-    table.add_row("[bold]Static QR Codes[/bold]", "", "", "")
-    for qr_type, count in sorted(static_qr_types.items(), key=lambda item: item[1], reverse=True):
-        table.add_row("Static", qr_type, str(count), "N/A")
-
-    table.add_row("[bold]Dynamic QR Codes[/bold]", "", "", "")
-    for qr_type, data in sorted(dynamic_qr_types.items(), key=lambda item: item[1]['count'], reverse=True):
-        table.add_row("Dynamic", qr_type, str(data['count']), str(data['scans']))
-
-    console.print(table)
-
-    console.print(f"\n[bold magenta]TOTAL STATIC QR CODE COUNT:[/bold magenta] [cyan]{static_qr_count}[/cyan]")
-    console.print(f"[bold magenta]TOTAL DYNAMIC QR CODE COUNT:[/bold magenta] [cyan]{dynamic_qr_count}[/cyan]")
-    console.print(f"[bold magenta]TOTAL SCANS:[/bold magenta] [cyan]{total_scans_all_time}[/cyan]")
-
-    download_csv = Prompt.ask("\n[bold cyan]📥 Would you like to download [bold magenta]QR CODE DATA[/bold magenta] as CSV? (y/n)", default=None)
-    if download_csv is None:
-        download_csv = 'n'
-
-    if download_csv.lower() == "y":
-        folder_name = "csv-exports"
-
-        if not os.path.exists(folder_name):
-            os.makedirs(folder_name)
-
-        filename = os.path.join(folder_name, f"QR_CODE_DATA_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv")
-
-        fieldnames = [
-            "ID", "Created", "Title", "Short URL", "Target URL",
-            "Solution Type", "QR Code Type", "Status", "Total Scans", "Unique Scans"
-        ]
-
+    try:
         with open(filename, mode='w', newline='') as file:
-            writer = csv.DictWriter(file, fieldnames=fieldnames)
+            writer = csv.DictWriter(file, fieldnames=qr_code_data[0].keys())
             writer.writeheader()
             writer.writerows(qr_code_data)
 
-        console.print(f"[bold green]CSV file '{filename}' has been successfully saved![/bold green]")
+        debug(f"CSV written: {filename}")
+        return filename
 
-        download_summary = Prompt.ask("[bold cyan]📥 Would you like to download [bold magenta]SUMMARY DATA[/bold magenta] as CSV (y/n)?", default=None)
-        if download_summary.lower() == "y":
-            summary_filename = os.path.join(folder_name, f"SUMMARY_DATA_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv")
+    except Exception as e:
+        debug(f"CSV export failed: {e}", "CRITICAL")
+        traceback.print_exc()
+        return None
 
-            summary_fieldnames = [
-                "QR Code Type", "QR Code Category", "Count", "Total Scans"
-            ]
 
-            summary_data = []
+# -------------------------
+# MAIN FUNCTION
+# -------------------------
+def fetch_qr_codes(access_token):
+    total_codes = get_total_qr_codes(access_token)
 
-            for qr_type, count in sorted(static_qr_types.items(), key=lambda item: item[1], reverse=True):
-                summary_data.append({
-                    "QR Code Type": "Static",
-                    "QR Code Category": qr_type,
-                    "Count": count,
-                    "Total Scans": "N/A"
-                })
+    if total_codes is None:
+        console.print("[red]Failed to retrieve total QR code count[/red]")
+        return
 
-            for qr_type, data in sorted(dynamic_qr_types.items(), key=lambda item: item[1]['count'], reverse=True):
-                summary_data.append({
-                    "QR Code Type": "Dynamic",
-                    "QR Code Category": qr_type,
-                    "Count": data['count'],
-                    "Total Scans": data['scans']
-                })
+    total_pages = (total_codes + PER_PAGE - 1) // PER_PAGE
+    total_pages = min(total_pages, MAX_SAFE_PAGES)
 
-            with open(summary_filename, mode='w', newline='') as summary_file:
-                writer = csv.DictWriter(summary_file, fieldnames=summary_fieldnames)
-                writer.writeheader()
-                writer.writerows(summary_data)
+    debug(f"Total pages to fetch: {total_pages}")
 
-            console.print(f"[bold green]CSV file '{summary_filename}' has been successfully saved![/bold green]")
+    qr_codes = fetch_qr_pages(access_token, total_pages)
 
-            download_granular = Prompt.ask("[bold cyan]📥 Would you like to download [bold magenta]GRANULAR DATA[/bold magenta] for each QR Code (y/n)?", default=None)
-            if download_granular.lower() == "y":
-                console.print("[bold green]Starting the granular data download...[/bold green]")
-                process_qr_codes(filename, access_token, "csv-exports/qr-code-exports")
+    results = process_qr_data(qr_codes)
 
+    console.print(f"[bold magenta]TOTAL STATIC:[/bold magenta] {results['static_count']}")
+    console.print(f"[bold magenta]TOTAL DYNAMIC:[/bold magenta] {results['dynamic_count']}")
+    console.print(f"[bold magenta]TOTAL SCANS:[/bold magenta] {results['total_scans']}")
+
+    # -------------------------
+    # EXPORT FLOW
+    # -------------------------
+    csv_file = None
+
+    if Prompt.ask("Download CSV summary data? (y/n)", default="n").lower() == "y":
+        csv_file = export_csv(results["data"])
+
+    if csv_file:
+        if Prompt.ask("Download granular QR code data? (y/n)", default="n").lower() == "y":
+            try:
+                process_qr_codes(csv_file, access_token, "csv-exports/qr-code-exports")
+            except Exception as e:
+                debug(f"Granular processing failed: {e}", "ERROR")
+                traceback.print_exc()
+
+
+# -------------------------
+# ENTRY POINT
+# -------------------------
 if __name__ == "__main__":
-    console.print("[bold cyan]📱 QRCG API: Bulk QR Code Statistics[/bold cyan]")
+    debug("Script started")
 
-    access_token = Prompt.ask("[bold green]🔑 Enter your API access token[/bold green]")
+    access_token = Prompt.ask("Enter API token")
 
-    specify_date_range = Prompt.ask("[bold cyan]📅 Would you like to specify date ranges (y/n)?[/bold cyan]", default="n").lower()
+    fetch_qr_codes(access_token)
 
-    if specify_date_range == "y":
-        start_date_input = Prompt.ask("[bold cyan]⏩ 📅 Search for QR Codes created from (YYYY-MM-DD)[/bold cyan]")
-        end_date_input = Prompt.ask("[bold cyan]📅 ⏪ Search for QR Codes created until (YYYY-MM-DD)[/bold cyan]")
-
-        if start_date_input != "all time":
-            start_date = datetime.strptime(start_date_input, "%Y-%m-%d")
-        else:
-            start_date = "all time"
-
-        if end_date_input != "all time":
-            end_date = datetime.strptime(end_date_input, "%Y-%m-%d")
-        else:
-            end_date = "all time"
-    else:
-        start_date = "all time"
-        end_date = "all time"
-
-    fetch_qr_codes(access_token, start_date, end_date)
+    debug("Script finished")
